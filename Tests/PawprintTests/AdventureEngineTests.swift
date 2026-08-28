@@ -226,6 +226,85 @@ final class AdventureEngineTests: XCTestCase {
         XCTAssertEqual(tooLarge.maxHealth, 2_000)
     }
 
+    func testEncounterCanAuthorHealthAndIntentPatternIndependently() throws {
+        let encounter = AdventureEncounter(
+            id: "authored",
+            affinity: .deepNight,
+            power: 70,
+            maxHealth: 95,
+            intentPattern: [.drainingMist]
+        )
+        let team = try party()
+        var battle = AdventureEngine.beginBattle(
+            party: team,
+            encounter: encounter,
+            seed: 42,
+            startingPartyHealth: team.maxHealth,
+            maxRounds: 3
+        )
+
+        XCTAssertEqual(battle.initialEnemyHealth, 95)
+        XCTAssertEqual(battle.currentIntent, .drainingMist)
+
+        let actorID = counterCatID(for: battle.currentIntent)
+        battle = try AdventureEngine.performTurn(
+            action: .basicAttack(catID: actorID),
+            in: battle
+        ).state
+        if battle.outcome == nil {
+            XCTAssertEqual(battle.currentIntent, .drainingMist)
+        }
+
+        let fallback = AdventureEncounter(
+            id: "empty-pattern",
+            affinity: .morning,
+            power: 10,
+            intentPattern: []
+        )
+        XCTAssertEqual(fallback.intentPattern, AdventureEnemyIntent.allCases)
+    }
+
+    func testAuthoredIntentPatternRotatesFromTheSeedAndRepeatsInOrder() throws {
+        let encounter = AdventureEncounter(
+            id: "weighted-pattern",
+            affinity: .evening,
+            power: 1,
+            maxHealth: 2_000,
+            intentPattern: [
+                .heavyStrike,
+                .guardedStance,
+                .heavyStrike,
+                .drainingMist,
+            ]
+        )
+        let team = try party()
+        var battle = AdventureEngine.beginBattle(
+            party: team,
+            encounter: encounter,
+            seed: 42,
+            startingPartyHealth: team.maxHealth,
+            maxRounds: 6
+        )
+        var observed: [AdventureEnemyIntent] = []
+
+        for _ in 0..<4 {
+            observed.append(battle.currentIntent)
+            battle = try AdventureEngine.performTurn(
+                action: .basicAttack(catID: team.members[0].id),
+                in: battle
+            ).state
+        }
+
+        let validRotations: [[AdventureEnemyIntent]] = [
+            [.heavyStrike, .guardedStance, .heavyStrike, .drainingMist],
+            [.guardedStance, .heavyStrike, .drainingMist, .heavyStrike],
+            [.heavyStrike, .drainingMist, .heavyStrike, .guardedStance],
+            [.drainingMist, .heavyStrike, .guardedStance, .heavyStrike],
+        ]
+        XCTAssertTrue(validRotations.contains(observed))
+        XCTAssertEqual(battle.currentIntent, observed[0])
+    }
+
     func testTurnBattleIsDeterministicForTheSameChoices() throws {
         let encounter = AdventureEncounter(id: "turns", affinity: .morning, power: 70)
         var first = AdventureEngine.beginBattle(

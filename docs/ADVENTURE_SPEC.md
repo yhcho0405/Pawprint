@@ -11,8 +11,9 @@ development branch that preserves the base Pawprint 0.10.0 UI. This is a develop
 specification and is not included in the public Pawprint 0.10.0 DMG. It documents the values and
 rules in the code that runs today, not design ideas or future goals.
 
-> Key conclusion: a cat's rarity grade provides small bonuses to HP, attack, and guard. By
-> contrast, **adventure level, bonds, and route stamps do not currently increase combat stats.**
+> Key conclusion: a cat's rarity grade provides small bonuses to HP, attack, and guard.
+> **Adventure level now unlocks routes at levels 2, 4, and 6, but it still does not increase combat
+> stats.** Bonds and route stamps remain stored counters without combat effects.
 
 ## At a glance
 
@@ -21,12 +22,13 @@ rules in the code that runs today, not design ideas or future goals.
 | Party | Exactly 3 distinct cats from previous days |
 | Expedition structure | Skirmish → relic → skirmish → relic → boss battle |
 | Actions | Choose 1 cat each turn and use a basic attack or role skill |
-| Routes | 3, all selectable from the beginning |
+| Routes | 6 authored routes covering all affinities; 3 begin unlocked and 3 unlock by level |
 | Combat resources | Shared party HP and shared mana |
 | Permanent progress | Adventure XP (level is derived from XP), completed runs, route stamps, and per-cat bonds |
 | Temporary rewards | Up to 2 relics that apply only to the current expedition |
 | Automatic progress | None. A turn advances only when the player submits a command with a button |
 | Level-based stat scaling | None |
+| Level-based unlocks | Dawn Garden at level 2, Noon Station at level 4, Deep-Night Lab at level 6 |
 | Bond and stamp effects | Accumulation is stored, but combat effects and ways to spend them are not implemented |
 | Active expedition restoration | None. Relaunching the app does not restore an active expedition |
 
@@ -49,12 +51,12 @@ Open Adventure from the Gallery
 | Name | Range | Determined by | Current effect |
 |---|---|---|---|
 | Cat rarity grade | S–D | Existing Pawpet rarity | Small bonuses to HP, attack, and guard |
-| Expedition result rank | S–D | Completion score or failure status | Determines XP awarded for this expedition |
-| Adventure level | 1 and up, with no cap | Total adventure XP | Displays progress only |
+| Expedition result rank | S–D | Completion score or failure status | Determines base XP before the route multiplier |
+| Adventure level | 1 and up, with no cap | Total adventure XP | Unlocks routes at levels 2, 4, and 6; no stat scaling |
 
 A cat's S grade and an expedition's S rank share a label but are otherwise unrelated. Result rank,
 XP, adventure level, bonds, and route stamps neither rewrite the cat's rarity grade nor change its
-combat stats.
+combat stats. Adventure level only changes route availability.
 
 ## Cats eligible for an adventure
 
@@ -374,8 +376,9 @@ from the healing power discussed here.
 - Player damage wobble is `-2...2` for every action.
 - Enemy attack wobble is `-2...2` for every action.
 - Opportunist activates when a value drawn from `0...3` is 0, so its probability is exactly 25%.
-- The seed determines the first enemy intent, after which Heavy Strike, Guarded Stance, and Draining
-  Mist repeat in sequence.
+- Every encounter owns an ordered intent pattern. The seed chooses its starting offset, after which
+  the authored pattern repeats. Repeated entries make an intent occur more often without adding a
+  hidden random roll.
 - Choosing the same cat and action from the same complete battle state produces the same result.
   When the seed, stage, and round are the same, both damage wobbles, the Opportunist check, and the
   intent sequence are the same.
@@ -385,25 +388,48 @@ from the healing power discussed here.
 
 ## Routes and stages
 
-Every route always consists of 2 skirmishes followed by 1 boss battle.
+Every route always consists of 2 skirmishes followed by 1 boss battle. Skirmishes allow 3 turns
+each, and the boss allows 5. Production routes author every encounter separately: earlier stages
+are no longer generated as fractions of boss power. Enemy power `P` is clamped to `1...1000` and
+authored maximum HP to `1...2000`. The compatibility initializer still defaults HP to `2P`, but the
+six routes below pass explicit HP values.
 
-| Stage | Type | Turn limit | Power |
-|---|---|---:|---:|
-| 1 | Skirmish | 3 turns | `max(1, boss power × 3 / 5)` |
-| 2 | Skirmish | 3 turns | `max(1, boss power × 3 / 4)` |
-| 3 | Boss battle | 5 turns | Unmodified boss power |
+| Route | Affinity | Minimum level | Difficulty | XP multiplier |
+|---|---|---:|---|---:|
+| Sunlit Trail | Morning | 1 | Easy | 100% |
+| Signal Rooftops | Evening | 1 | Normal | 100% |
+| Midnight Archive | Night | 1 | Normal | 100% |
+| Dawn Garden | Dawn | 2 | Normal | 115% |
+| Noon Station | Afternoon | 4 | Hard | 130% |
+| Deep-Night Lab | Deep night | 6 | Expert | 130% |
 
-Enemy power `P` is clamped to `1...1000`, and enemy maximum HP is `2P`. All three enemies on a route
-have the same affinity.
+Difficulty is descriptive route metadata; it does not apply another hidden scaling formula. A
+locked route can be previewed in the route picker, but the expedition cannot start until the
+required adventure level is reached. Stamps and completed-run count do not unlock routes.
 
-| Route | Affinity | Stage 1 `P / HP` | Stage 2 `P / HP` | Boss `P / HP` |
-|---|---|---:|---:|---:|
-| Sunlit Trail | Morning | 37 / 74 | 46 / 92 | 62 / 124 |
-| Signal Rooftops | Evening | 39 / 78 | 49 / 98 | 66 / 132 |
-| Midnight Archive | Night | 42 / 84 | 52 / 104 | 70 / 140 |
+In the pattern column, `H` means Heavy Strike, `G` Guarded Stance, and `D` Draining Mist. The shown
+order is the authored cycle; the seed may rotate its first entry.
 
-All three routes are unlocked from the beginning. Level, stamps, and completed-run count neither
-lock routes nor modify their difficulty.
+| Route | Stage and enemy | `P / HP` | Intent pattern |
+|---|---|---:|---|
+| Sunlit Trail | 1 · Moss Scout | 34 / 72 | `H-G-D` |
+| Sunlit Trail | 2 · Pollen Trickster | 43 / 88 | `G-D-H` |
+| Sunlit Trail | Boss · Sunbeam Guardian | 60 / 124 | `H-H-G-D` |
+| Signal Rooftops | 1 · Wire Sparrow | 36 / 72 | `G-G-H` |
+| Signal Rooftops | 2 · Neon Prowler | 45 / 94 | `G-H-D` |
+| Signal Rooftops | Boss · Signal Warden | 64 / 132 | `G-G-D-H` |
+| Midnight Archive | 1 · Dust Wisp | 38 / 68 | `D-D-G` |
+| Midnight Archive | 2 · Ink Shadow | 48 / 84 | `D-H-D` |
+| Midnight Archive | Boss · Archive Keeper | 68 / 120 | `D-D-H` |
+| Dawn Garden | 1 · Dew Sprite | 39 / 72 | `H-D-H` |
+| Dawn Garden | 2 · Glasswing | 50 / 96 | `H-H-G` |
+| Dawn Garden | Boss · Dawn Bloom | 72 / 142 | `H-D-H` |
+| Noon Station | 1 · Platform Spark | 40 / 82 | `G-G-D` |
+| Noon Station | 2 · Clockwork Rival | 51 / 106 | `G-H-D` |
+| Noon Station | Boss · Station Keeper | 74 / 150 | `G-G-H-D` |
+| Deep-Night Lab | 1 · Static Wisp | 42 / 84 | `D-H-D-G` |
+| Deep-Night Lab | 2 · Sleeping Process | 54 / 110 | `H-D-G-D` |
+| Deep-Night Lab | Boss · Kernel Guardian | 78 / 158 | `D-H-G-D` |
 
 ### Battle outcomes and stage transitions
 
@@ -500,17 +526,18 @@ The score formula does not directly read final remaining mana or the number of r
 management and selected relic effects can influence combat performance and therefore affect the score
 indirectly. The following can also have an indirect effect through combat performance:
 
-- The fixed difficulty of the selected route
+- The selected route's authored enemies, HP values, intent patterns, and fixed difficulty
 - Cat rarity grades and party role composition
 
-Adventure level, bonds, and route stamps are the progress values with no direct or indirect effect
-on the current score or combat.
+Adventure level decides which routes can be started, but is not read by combat or score calculation
+after a route has been chosen. Bonds and route stamps have no direct or indirect effect on current
+combat or score.
 
 ## XP and permanent rewards
 
 ### Completion
 
-| Result rank | Adventure XP | Selected route stamp | Participating cat bonds |
+| Result rank | Base adventure XP | Selected route stamp | Participating cat bonds |
 |---|---:|---:|---:|
 | S | 120 | +1 | +1 each |
 | A | 100 | +1 | +1 each |
@@ -521,13 +548,22 @@ on the current score or combat.
 Completing an expedition also increments the total completed-run count by 1. The D-rank completion
 reward branch is currently unreachable.
 
+The route multiplier is applied to every positive XP grant, including partial XP after defeat:
+
+```text
+Granted adventure XP = base adventure XP × route multiplier / 100
+```
+
+Integer division discards the remainder. For example, 20 base XP becomes 23 on Dawn Garden and 26
+on either 130% route. Stamps and bonds are not multiplied.
+
 ### Defeat and withdrawal
 
 ```text
 Defeat XP = number of battles won before defeat × 10
 ```
 
-| Result | Adventure XP | Stamp | Bonds |
+| Result | Base adventure XP | Stamp | Bonds |
 |---|---:|---:|---:|
 | Defeat in the first skirmish | 0 | 0 | 0 |
 | Defeat after 1 skirmish win | 10 | 0 | 0 |
@@ -553,17 +589,26 @@ XP required per level = 250
 | 750–999 | 4 |
 | Thereafter | Continues to increase every 250 XP |
 
-There is currently no level cap. Level and XP progress are shown in the UI, but the following effects
-are **not yet implemented**:
+There is currently no level cap. Level and XP progress are shown in the UI. Levels now unlock
+routes as follows:
+
+| Adventure level | Newly available route |
+|---:|---|
+| 1 | Sunlit Trail, Signal Rooftops, and Midnight Archive |
+| 2 | Dawn Garden |
+| 4 | Noon Station |
+| 6 | Deep-Night Lab |
+
+The following effects are **not implemented**:
 
 - Increases to attack, maximum HP, guard, mitigation, or healing
 - Increased maximum mana
-- Enemy power or HP scaling
-- XP or reward multipliers
-- Route, relic, skill, or feature unlocks
+- Stat, enemy-power, or enemy-HP scaling from adventure level
+- Relic, skill, or other feature unlocks
 
-The current adventure level therefore represents progress only and has no effect on combat
-performance.
+Adventure level is therefore progression and a route gate. It does not directly change party stats,
+mana, enemy values, or the score formula. Higher XP multipliers belong to the authored routes, not
+to a general level-scaling formula.
 
 ## Route stamps and cat bonds
 
@@ -620,10 +665,9 @@ early development build has data in UserDefaults and SQLite has none, that data 
 | Stat growth by level | None |
 | Bond effects and bond display | Stored counter only |
 | Stamp rewards, spending, or unlocks | None |
-| Route unlocks by level | Every route is available from the beginning |
 | Numerical bonus for a 3-role party | None |
 | Enemy difficulty scaling by level | None |
-| Permanent relic inventory | None |
+| Permanent relic, equipment, or item inventory and upgrades | None |
 | Active expedition save and restoration | None |
 | Idle, offline, or background progress | None |
 
@@ -637,15 +681,15 @@ which the current UI uses.
 ## Code reference points
 
 - [AdventureEngine.swift](../Sources/PawprintCore/Engine/AdventureEngine.swift): cat stats, actions,
-  damage, guard, healing, passives, and enemy intents
+  damage, guard, healing, passives, authored enemy HP, and intent patterns
 - [AdventureExpeditionEngine.swift](../Sources/PawprintCore/Adventure/AdventureExpeditionEngine.swift):
-  3-battle expeditions, mana, relics, score, rank, and rewards
+  3-battle expeditions, mana, relics, score, rank, and route-multiplied XP rewards
 - [PawpetAdventureAdapter.swift](../Sources/Pawprint/Adventure/PawpetAdventureAdapter.swift):
   mapping Pawpet appearance to RPG traits
 - [AdventureRosterCatalog.swift](../Sources/Pawprint/Adventure/AdventureRosterCatalog.swift):
   candidate eligibility rules
 - [AdventureExpeditionCenter.swift](../Sources/Pawprint/Adventure/AdventureExpeditionCenter.swift):
-  routes, party draft, and active expedition lifecycle
+  the six authored route catalogs, level gates, party draft, and active expedition lifecycle
 - [AdventureRewardStore.swift](../Sources/Pawprint/Adventure/AdventureRewardStore.swift):
   XP, level, stamp, and bond persistence
 - [PawprintStore.swift](../Sources/PawprintCore/Storage/PawprintStore.swift):

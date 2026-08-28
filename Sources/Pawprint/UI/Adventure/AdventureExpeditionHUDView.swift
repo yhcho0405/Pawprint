@@ -382,6 +382,7 @@ struct AdventureExpeditionHUDView: View {
                     HStack {
                         Text(
                             AdventureExpeditionPresentation.encounterName(
+                                encounterID: state.battle.encounter.id,
                                 stageIndex: state.stageIndex,
                                 kind: state.currentStage.kind
                             )
@@ -801,20 +802,10 @@ struct AdventureExpeditionHUDView: View {
     private var idleContent: some View {
         VStack(alignment: .leading, spacing: 7) {
             HStack(spacing: 7) {
-                Picker(
-                    L10n.t("adventure.expedition.route.label"),
-                    selection: draftRouteBinding
-                ) {
-                    ForEach(AdventureExpeditionRoute.allCases) { route in
-                        Label(
-                            L10n.t(route.titleKey),
-                            systemImage: route.systemImage
-                        )
-                        .tag(route)
-                    }
-                }
-                .pickerStyle(.menu)
-                .labelsHidden()
+                AdventureRouteMenu(
+                    selection: draftRouteBinding,
+                    adventureLevel: expedition.rewardProgress.level
+                )
 
                 Spacer(minLength: 4)
 
@@ -833,6 +824,38 @@ struct AdventureExpeditionHUDView: View {
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .lineLimit(hudController.isExpanded ? 3 : 1)
+
+            HStack(spacing: 5) {
+                Text(
+                    AdventureExpeditionPresentation.routeOverview(
+                        expedition.draftRoute
+                    )
+                )
+                .lineLimit(hudController.isExpanded ? 2 : 1)
+                Spacer(minLength: 3)
+                Text(
+                    AdventureExpeditionPresentation.routeReward(
+                        expedition.draftRoute
+                    )
+                )
+                .foregroundStyle(
+                    expedition.draftRoute.rewardMultiplierPercent > 100
+                        ? Color.accentColor
+                        : Color.secondary
+                )
+            }
+            .font(.caption2.weight(.semibold))
+
+            if !expedition.isRouteUnlocked(expedition.draftRoute) {
+                Label(
+                    AdventureExpeditionPresentation.routeUnlockRequirement(
+                        expedition.draftRoute
+                    ),
+                    systemImage: "lock.fill"
+                )
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.orange)
+            }
 
             HStack {
                 Text(
@@ -891,8 +914,18 @@ struct AdventureExpeditionHUDView: View {
                     expedition.startDraft()
                 } label: {
                     Label(
-                        L10n.t("adventure.expedition.start"),
-                        systemImage: "play.fill"
+                        expedition.isRouteUnlocked(expedition.draftRoute)
+                            ? L10n.t("adventure.expedition.start")
+                            : AdventureExpeditionPresentation
+                                .routeUnlockRequirement(
+                                    expedition.draftRoute
+                                ),
+                        systemImage:
+                            expedition.isRouteUnlocked(
+                                expedition.draftRoute
+                            )
+                                ? "play.fill"
+                                : "lock.fill"
                     )
                     .font(.caption.weight(.bold))
                     .frame(maxWidth: .infinity, minHeight: 25)

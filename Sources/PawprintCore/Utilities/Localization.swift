@@ -12,8 +12,8 @@ import Observation
 /// use `%@` placeholders, filled positionally by `L10n.t`.
 ///
 /// **Adding a language:** drop in `Resources/Localization/<code>.json`, translating the values of
-/// `ko.json`, and add the code to `AppLanguage`. Missing keys fall back to the base language, so a
-/// partial translation degrades to Korean rather than showing raw keys.
+/// `ko.json`, and add the code to `AppLanguage`. Missing keys fall back to English first, then to
+/// the Korean base pack, rather than showing raw keys.
 @Observable
 final package class LocalizationManager {
     static package let shared = LocalizationManager()
@@ -54,8 +54,8 @@ final package class LocalizationManager {
         languageCode = code
     }
 
-    /// Resolves `.system` against the user's preferred languages, falling back to the base pack
-    /// when none of them has a pack.
+    /// Resolves `.system` against the user's preferred languages, falling back to English when
+    /// none of them has a pack.
     /// Returns true when the active pack actually changed, so the caller can rebuild anything
     /// that has already-translated text baked into it.
     @discardableResult

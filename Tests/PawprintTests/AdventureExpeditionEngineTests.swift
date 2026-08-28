@@ -464,6 +464,23 @@ final class AdventureExpeditionEngineTests: XCTestCase {
         XCTAssertEqual(eventCount(.relicOffered, in: trace.events), 2)
     }
 
+    func testRouteRewardMultiplierAppliesAfterBaseXPIsCalculated() throws {
+        let plan = expeditionPlan(
+            firstPower: 1,
+            secondPower: 1,
+            bossPower: 1,
+            rewardMultiplierPercent: 130
+        )
+        let trace = try playToFinish(
+            try begin(seed: 12, plan: plan, runID: "bonus-route")
+        )
+        let result = try XCTUnwrap(trace.state.result)
+
+        XCTAssertEqual(result.rank, .s)
+        XCTAssertEqual(result.adventureXP, 156)
+        XCTAssertEqual(plan.rewardMultiplierPercent, 130)
+    }
+
     func testDefeatStopsTheRunWithoutStampOrCatGradeMutation() throws {
         let hard = expeditionPlan(
             firstPower: 1_000,
@@ -504,6 +521,38 @@ final class AdventureExpeditionEngineTests: XCTestCase {
         XCTAssertEqual(result.adventureXP, 20)
         XCTAssertEqual(result.routeStampDelta, 0)
         XCTAssertTrue(result.bondGains.isEmpty)
+    }
+
+    func testRouteRewardMultiplierAlsoAppliesToPartialDefeatXP() throws {
+        let plan = expeditionPlan(
+            firstPower: 1,
+            secondPower: 1,
+            bossPower: 1_000,
+            rewardMultiplierPercent: 115
+        )
+        let trace = try playToFinish(
+            try begin(seed: 5, plan: plan, runID: "partial-bonus")
+        )
+        let result = try XCTUnwrap(trace.state.result)
+
+        XCTAssertEqual(result.status, .defeated)
+        XCTAssertEqual(result.adventureXP, 23)
+    }
+
+    func testRouteRewardMultiplierFloorsOneBattlePartialXP() throws {
+        let plan = expeditionPlan(
+            firstPower: 1,
+            secondPower: 1_000,
+            bossPower: 1,
+            rewardMultiplierPercent: 115
+        )
+        let trace = try playToFinish(
+            try begin(seed: 5, plan: plan, runID: "partial-floor")
+        )
+        let result = try XCTUnwrap(trace.state.result)
+
+        XCTAssertEqual(result.status, .defeated)
+        XCTAssertEqual(result.adventureXP, 11)
     }
 
     func testWithdrawAndFinishedCommandsCannotGrantTwice() throws {
@@ -612,7 +661,8 @@ final class AdventureExpeditionEngineTests: XCTestCase {
     private func expeditionPlan(
         firstPower: Int = 30,
         secondPower: Int = 36,
-        bossPower: Int = 45
+        bossPower: Int = 45,
+        rewardMultiplierPercent: Int = 100
     ) -> AdventureExpeditionPlan {
         AdventureExpeditionPlan(
             routeID: "test-route",
@@ -630,7 +680,8 @@ final class AdventureExpeditionEngineTests: XCTestCase {
                 id: "boss",
                 affinity: .night,
                 power: bossPower
-            )
+            ),
+            rewardMultiplierPercent: rewardMultiplierPercent
         )
     }
 

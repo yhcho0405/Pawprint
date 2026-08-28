@@ -139,14 +139,30 @@ package struct AdventureEncounter: Equatable, Sendable {
     package let id: String
     package let affinity: AdventureAffinity
     package let power: Int
+    /// Route-authored enemy durability, independent from attack power.
+    package let maxHealth: Int
+    /// Ordered, repeatable intent deck. Duplicate entries make one response more common without
+    /// introducing hidden probabilities, and the battle seed still chooses the starting offset.
+    package let intentPattern: [AdventureEnemyIntent]
 
-    package init(id: String, affinity: AdventureAffinity, power: Int) {
+    package init(
+        id: String,
+        affinity: AdventureAffinity,
+        power: Int,
+        maxHealth: Int? = nil,
+        intentPattern: [AdventureEnemyIntent] = AdventureEnemyIntent.allCases
+    ) {
         self.id = id
         self.affinity = affinity
         self.power = min(max(1, power), 1_000)
+        self.maxHealth = min(
+            max(1, maxHealth ?? self.power * 2),
+            2_000
+        )
+        self.intentPattern = intentPattern.isEmpty
+            ? AdventureEnemyIntent.allCases
+            : intentPattern
     }
-
-    package var maxHealth: Int { power * 2 }
 }
 
 package enum AdventureOutcome: Equatable, Sendable {
@@ -367,7 +383,11 @@ package enum AdventureEngine {
             initialEnemyHealth: encounter.maxHealth,
             partyHealth: boundedPartyHealth,
             enemyHealth: encounter.maxHealth,
-            currentIntent: battleIntent(seed: seed, round: 1),
+            currentIntent: battleIntent(
+                encounter: encounter,
+                seed: seed,
+                round: 1
+            ),
             outcome: boundedPartyHealth == 0 ? .defeat : nil,
             history: []
         )
@@ -599,7 +619,11 @@ package enum AdventureEngine {
         )
         let nextRound = outcome == nil ? state.round + 1 : state.round
         let nextIntent = outcome == nil
-            ? battleIntent(seed: state.seed, round: nextRound)
+            ? battleIntent(
+                encounter: state.encounter,
+                seed: state.seed,
+                round: nextRound
+            )
             : intent
         let nextState = AdventureBattleState(
             party: state.party,
@@ -620,13 +644,15 @@ package enum AdventureEngine {
     }
 
     private static func battleIntent(
+        encounter: AdventureEncounter,
         seed: UInt64,
         round: Int
     ) -> AdventureEnemyIntent {
         var generator = AdventureGenerator(seed: seed)
-        let offset = Int(generator.next() % UInt64(AdventureEnemyIntent.allCases.count))
-        let index = (offset + round - 1) % AdventureEnemyIntent.allCases.count
-        return AdventureEnemyIntent.allCases[index]
+        let pattern = encounter.intentPattern
+        let offset = Int(generator.next() % UInt64(pattern.count))
+        let index = (offset + round - 1) % pattern.count
+        return pattern[index]
     }
 
     /// Resolves one compact encounter of up to three rounds.

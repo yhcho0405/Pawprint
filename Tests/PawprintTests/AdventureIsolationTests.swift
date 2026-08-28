@@ -172,6 +172,36 @@ final class AdventureIsolationTests: XCTestCase {
         }
     }
 
+    func testAdventureRouteSelectorsUseStablePullDownMenus() throws {
+        let presentation = try repositorySource(
+            "Sources/Pawprint/UI/Adventure/AdventureExpeditionPresentation.swift"
+        )
+        let root = try repositorySource(
+            "Sources/Pawprint/UI/Adventure/AdventureRootView.swift"
+        )
+        let hud = try repositorySource(
+            "Sources/Pawprint/UI/Adventure/AdventureExpeditionHUDView.swift"
+        )
+
+        XCTAssertTrue(presentation.contains("struct AdventureRouteMenu: View"))
+        XCTAssertTrue(
+            presentation.contains(
+                "private var routeMenu: some View {\n        Menu {"
+            )
+        )
+        XCTAssertFalse(presentation.contains(".pickerStyle(.menu)"))
+        XCTAssertTrue(root.contains("AdventureRouteMenu("))
+        XCTAssertTrue(hud.contains("AdventureRouteMenu("))
+        XCTAssertFalse(
+            root.contains(".pickerStyle(.menu)"),
+            "A pop-up Picker repositions its menu around the selected route"
+        )
+        XCTAssertFalse(
+            hud.contains(".pickerStyle(.menu)"),
+            "The HUD route selector must use the same stable pull-down menu"
+        )
+    }
+
     func testSnapshotHarnessRequiresAnExplicitSeparateDatabase() throws {
         XCTAssertNil(try AdventureSnapshotHarness.configuration(environment: [:]))
 

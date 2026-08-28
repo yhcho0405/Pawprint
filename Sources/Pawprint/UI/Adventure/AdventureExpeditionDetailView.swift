@@ -390,6 +390,7 @@ struct AdventureExpeditionDetailView: View {
             HStack {
                 Label(
                     AdventureExpeditionPresentation.encounterName(
+                        encounterID: state.battle.encounter.id,
                         stageIndex: state.stageIndex,
                         kind: state.currentStage.kind
                     ),

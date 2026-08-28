@@ -120,9 +120,13 @@ enum AdventureExpeditionPresentation {
     }
 
     static func encounterName(
+        encounterID: String,
         stageIndex: Int,
         kind: AdventureExpeditionStageKind
     ) -> String {
+        if let route = AdventureExpeditionRoute.route(for: encounterID) {
+            return L10n.t(route.enemyNameKey(stageIndex: stageIndex))
+        }
         if kind == .boss {
             return L10n.t("adventure.expedition.enemy.boss")
         }
@@ -152,6 +156,48 @@ enum AdventureExpeditionPresentation {
         case .echoCharm: return "wave.3.right.circle.fill"
         case .healingHerb: return "leaf.fill"
         }
+    }
+
+    static func routeSelectionName(
+        _ route: AdventureExpeditionRoute,
+        adventureLevel: Int
+    ) -> String {
+        let title = L10n.t(route.titleKey)
+        guard !route.isUnlocked(at: adventureLevel) else { return title }
+        return L10n.t(
+            "adventure.expedition.route.lockedName",
+            title,
+            route.minimumLevel
+        )
+    }
+
+    static func routeOverview(_ route: AdventureExpeditionRoute) -> String {
+        L10n.t(
+            "adventure.expedition.route.overview",
+            affinityName(route.affinity),
+            L10n.t(route.difficulty.titleKey),
+            route.minimumLevel,
+            intentName(route.featuredIntent)
+        )
+    }
+
+    static func routeReward(_ route: AdventureExpeditionRoute) -> String {
+        guard route.rewardMultiplierPercent > 100 else {
+            return L10n.t("adventure.expedition.route.baseXP")
+        }
+        return L10n.t(
+            "adventure.expedition.route.bonusXP",
+            route.rewardMultiplierPercent - 100
+        )
+    }
+
+    static func routeUnlockRequirement(
+        _ route: AdventureExpeditionRoute
+    ) -> String {
+        L10n.t(
+            "adventure.expedition.route.unlockLevel",
+            route.minimumLevel
+        )
     }
 
     static func resultTitle(
@@ -184,6 +230,91 @@ extension AdventureExpeditionRoute {
         case .sunlitTrail: return .orange
         case .signalRooftops: return .purple
         case .midnightArchive: return .blue
+        case .dawnGarden: return .pink
+        case .noonStation: return .brown
+        case .deepNightLab: return .indigo
         }
+    }
+}
+
+/// A pull-down route selector shared by the full Adventure window and the floating HUD.
+///
+/// A menu-style `Picker` maps to an AppKit pop-up button, which aligns the currently selected row
+/// with the control. With six routes, choosing a lower row makes the next menu appear to jump
+/// upward. `Menu` uses pull-down semantics instead, so its origin stays anchored to the control.
+struct AdventureRouteMenu: View {
+    @Binding private var selection: AdventureExpeditionRoute
+    let adventureLevel: Int
+    let showsFieldLabel: Bool
+
+    init(
+        selection: Binding<AdventureExpeditionRoute>,
+        adventureLevel: Int,
+        showsFieldLabel: Bool = false
+    ) {
+        _selection = selection
+        self.adventureLevel = adventureLevel
+        self.showsFieldLabel = showsFieldLabel
+    }
+
+    var body: some View {
+        Group {
+            if showsFieldLabel {
+                LabeledContent(
+                    L10n.t("adventure.expedition.route.label")
+                ) {
+                    routeMenu
+                }
+            } else {
+                routeMenu
+            }
+        }
+    }
+
+    private var routeMenu: some View {
+        Menu {
+            ForEach(AdventureExpeditionRoute.allCases) { route in
+                Button {
+                    selection = route
+                } label: {
+                    Label(
+                        AdventureExpeditionPresentation.routeSelectionName(
+                            route,
+                            adventureLevel: adventureLevel
+                        ),
+                        systemImage: itemIcon(for: route)
+                    )
+                }
+            }
+        } label: {
+            Label(
+                AdventureExpeditionPresentation.routeSelectionName(
+                    selection,
+                    adventureLevel: adventureLevel
+                ),
+                systemImage: selection.isUnlocked(at: adventureLevel)
+                    ? selection.systemImage
+                    : "lock.fill"
+            )
+            .lineLimit(1)
+        }
+        .accessibilityLabel(
+            L10n.t("adventure.expedition.route.label")
+        )
+        .accessibilityValue(
+            AdventureExpeditionPresentation.routeSelectionName(
+                selection,
+                adventureLevel: adventureLevel
+            )
+        )
+    }
+
+    private func itemIcon(
+        for route: AdventureExpeditionRoute
+    ) -> String {
+        if route == selection { return "checkmark" }
+        return route.isUnlocked(at: adventureLevel)
+            ? route.systemImage
+            : "lock.fill"
     }
 }

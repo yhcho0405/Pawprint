@@ -1,15 +1,18 @@
 # Language packs
 
-Flat `key: template` JSON, one file per language. `ko.json` is the base: every other pack falls
-back to it key by key, so a partial translation degrades to Korean rather than showing raw keys.
+Flat `key: template` JSON, one file per language. `ko.json` is the key-generating base and
+`en.json` is the display fallback. A missing entry in a non-English pack falls back to English,
+then to Korean if English also lacks it, rather than showing a raw key.
 
 ## Adding a language
 
 1. Copy `ko.json` to `<code>.json` and translate the values, leaving the keys alone.
 2. Add the code to `AppLanguage` and `AppLanguage.availableCodes` in
-   `Sources/Pawprint/Utilities/Localization.swift`.
+   `Sources/PawprintCore/Utilities/Localization.swift`.
 
-That's it — no Xcode, no rebuild of anything but the app itself.
+That's it — no Xcode, no rebuild of anything but the app itself. A missing translation works
+through the fallback chain, but a feature is considered fully localized only when its whole key
+namespace is present in every supported pack.
 
 ## Templates
 

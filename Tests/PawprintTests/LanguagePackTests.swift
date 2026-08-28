@@ -90,12 +90,32 @@ final class LanguagePackTests: XCTestCase {
         }
     }
 
-    /// Korean is the base and is what everything falls back through, so it must be complete.
+    /// Korean is the canonical key set and terminal fallback, while English is the first display
+    /// fallback for non-English packs. Both therefore have to remain complete and in sync.
     func testTheBasePackIsComplete() throws {
         let korean = try pack("ko")
         let english = try pack("en")
         XCTAssertEqual(Set(korean.keys), Set(english.keys),
                        "the base and English packs have drifted apart")
+    }
+
+    /// Adventure is a user-facing mode in every language offered by Settings. Falling back to
+    /// English for the whole feature makes the language picker misleading even though partial
+    /// packs remain valid for unrelated, newly introduced strings.
+    func testAdventureNamespaceIsCompleteInEveryLanguage() throws {
+        let expected = Set(
+            try pack("ko").keys.filter { $0.hasPrefix("adventure.") }
+        )
+        for code in AppLanguage.availableCodes {
+            let actual = Set(
+                try pack(code).keys.filter { $0.hasPrefix("adventure.") }
+            )
+            XCTAssertEqual(
+                actual,
+                expected,
+                "\(code) is missing adventure UI translations"
+            )
+        }
     }
 
     /// Reports where each translation stands, so its coverage is a number rather than an

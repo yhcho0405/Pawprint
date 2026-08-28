@@ -2,64 +2,83 @@ import Foundation
 import Observation
 import PawprintCore
 
-/// The three deliberately small routes available to the turn-based expedition.
+enum AdventureRouteDifficulty: String, CaseIterable {
+    case easy
+    case normal
+    case hard
+    case expert
+
+    var titleKey: String {
+        "adventure.expedition.route.difficulty.\(rawValue)"
+    }
+}
+
+/// Six authored routes spanning every adventure affinity.
+///
+/// Each route owns three encounters instead of deriving two copies from one boss. That keeps the
+/// content catalog in the app layer while the pure engine remains reusable and deterministic.
 enum AdventureExpeditionRoute: String, CaseIterable, Identifiable {
     case sunlitTrail
     case signalRooftops
     case midnightArchive
+    case dawnGarden
+    case noonStation
+    case deepNightLab
 
     var id: String { rawValue }
 
-    var encounter: AdventureEncounter {
+    var minimumLevel: Int {
         switch self {
-        case .sunlitTrail:
-            return AdventureEncounter(
-                id: "sunlit-trail",
-                affinity: .morning,
-                power: 62
-            )
-        case .signalRooftops:
-            return AdventureEncounter(
-                id: "signal-rooftops",
-                affinity: .evening,
-                power: 66
-            )
-        case .midnightArchive:
-            return AdventureEncounter(
-                id: "midnight-archive",
-                affinity: .night,
-                power: 70
-            )
+        case .sunlitTrail, .signalRooftops, .midnightArchive: return 1
+        case .dawnGarden: return 2
+        case .noonStation: return 4
+        case .deepNightLab: return 6
         }
     }
 
-    var expeditionPlan: AdventureExpeditionPlan {
-        AdventureExpeditionPlan(
-            routeID: rawValue,
-            bossEncounter: encounter
-        )
+    var difficulty: AdventureRouteDifficulty {
+        switch self {
+        case .sunlitTrail: return .easy
+        case .signalRooftops, .midnightArchive, .dawnGarden: return .normal
+        case .noonStation: return .hard
+        case .deepNightLab: return .expert
+        }
+    }
+
+    var affinity: AdventureAffinity {
+        switch self {
+        case .sunlitTrail: return .morning
+        case .signalRooftops: return .evening
+        case .midnightArchive: return .night
+        case .dawnGarden: return .dawn
+        case .noonStation: return .afternoon
+        case .deepNightLab: return .deepNight
+        }
+    }
+
+    var featuredIntent: AdventureEnemyIntent {
+        switch self {
+        case .sunlitTrail: return .heavyStrike
+        case .signalRooftops, .noonStation: return .guardedStance
+        case .midnightArchive, .deepNightLab: return .drainingMist
+        case .dawnGarden: return .heavyStrike
+        }
+    }
+
+    var rewardMultiplierPercent: Int {
+        switch self {
+        case .sunlitTrail, .signalRooftops, .midnightArchive: return 100
+        case .dawnGarden: return 115
+        case .noonStation, .deepNightLab: return 130
+        }
     }
 
     var titleKey: String {
-        switch self {
-        case .sunlitTrail:
-            return "adventure.expedition.route.sunlitTrail.title"
-        case .signalRooftops:
-            return "adventure.expedition.route.signalRooftops.title"
-        case .midnightArchive:
-            return "adventure.expedition.route.midnightArchive.title"
-        }
+        "adventure.expedition.route.\(rawValue).title"
     }
 
     var descriptionKey: String {
-        switch self {
-        case .sunlitTrail:
-            return "adventure.expedition.route.sunlitTrail.description"
-        case .signalRooftops:
-            return "adventure.expedition.route.signalRooftops.description"
-        case .midnightArchive:
-            return "adventure.expedition.route.midnightArchive.description"
-        }
+        "adventure.expedition.route.\(rawValue).description"
     }
 
     var systemImage: String {
@@ -68,14 +87,121 @@ enum AdventureExpeditionRoute: String, CaseIterable, Identifiable {
         case .signalRooftops:
             return "antenna.radiowaves.left.and.right"
         case .midnightArchive: return "books.vertical.fill"
+        case .dawnGarden: return "camera.macro"
+        case .noonStation: return "tram.fill"
+        case .deepNightLab: return "server.rack"
         }
+    }
+
+    /// The boss encounter retained for compatibility with callers that present one route power.
+    var encounter: AdventureEncounter {
+        expeditionPlan.stages[2].encounter
+    }
+
+    var expeditionPlan: AdventureExpeditionPlan {
+        switch self {
+        case .sunlitTrail:
+            return plan(
+                first: ("moss-scout", 34, 72, [.heavyStrike, .guardedStance, .drainingMist]),
+                second: ("pollen-trickster", 43, 88, [.guardedStance, .drainingMist, .heavyStrike]),
+                boss: ("sunbeam-guardian", 60, 124, [.heavyStrike, .heavyStrike, .guardedStance, .drainingMist])
+            )
+        case .signalRooftops:
+            return plan(
+                first: ("wire-sparrow", 36, 72, [.guardedStance, .guardedStance, .heavyStrike]),
+                second: ("neon-prowler", 45, 94, [.guardedStance, .heavyStrike, .drainingMist]),
+                boss: ("signal-warden", 64, 132, [.guardedStance, .guardedStance, .drainingMist, .heavyStrike])
+            )
+        case .midnightArchive:
+            return plan(
+                first: ("dust-wisp", 38, 68, [.drainingMist, .drainingMist, .guardedStance]),
+                second: ("ink-shadow", 48, 84, [.drainingMist, .heavyStrike, .drainingMist]),
+                boss: ("archive-keeper", 68, 120, [.drainingMist, .drainingMist, .heavyStrike])
+            )
+        case .dawnGarden:
+            return plan(
+                first: ("dew-sprite", 39, 72, [.heavyStrike, .drainingMist, .heavyStrike]),
+                second: ("glasswing", 50, 96, [.heavyStrike, .heavyStrike, .guardedStance]),
+                boss: ("dawn-bloom", 72, 142, [.heavyStrike, .drainingMist, .heavyStrike])
+            )
+        case .noonStation:
+            return plan(
+                first: ("platform-spark", 40, 82, [.guardedStance, .guardedStance, .drainingMist]),
+                second: ("clockwork-rival", 51, 106, [.guardedStance, .heavyStrike, .drainingMist]),
+                boss: ("station-master", 74, 150, [.guardedStance, .guardedStance, .heavyStrike, .drainingMist])
+            )
+        case .deepNightLab:
+            return plan(
+                first: ("static-wisp", 42, 84, [.drainingMist, .heavyStrike, .drainingMist, .guardedStance]),
+                second: ("sleep-process", 54, 110, [.heavyStrike, .drainingMist, .guardedStance, .drainingMist]),
+                boss: ("kernel-guardian", 78, 158, [.drainingMist, .heavyStrike, .guardedStance, .drainingMist])
+            )
+        }
+    }
+
+    func enemyNameKey(stageIndex: Int) -> String {
+        let stage: String
+        switch stageIndex {
+        case 0: stage = "first"
+        case 1: stage = "second"
+        default: stage = "boss"
+        }
+        return "adventure.expedition.route.\(rawValue).enemy.\(stage)"
+    }
+
+    func isUnlocked(at adventureLevel: Int) -> Bool {
+        adventureLevel >= minimumLevel
+    }
+
+    private var encounterIDPrefix: String {
+        switch self {
+        case .sunlitTrail: return "sunlit-trail"
+        case .signalRooftops: return "signal-rooftops"
+        case .midnightArchive: return "midnight-archive"
+        case .dawnGarden: return "dawn-garden"
+        case .noonStation: return "noon-station"
+        case .deepNightLab: return "deep-night-lab"
+        }
+    }
+
+    private typealias EncounterDefinition = (
+        suffix: String,
+        power: Int,
+        health: Int,
+        intents: [AdventureEnemyIntent]
+    )
+
+    private func plan(
+        first: EncounterDefinition,
+        second: EncounterDefinition,
+        boss: EncounterDefinition
+    ) -> AdventureExpeditionPlan {
+        AdventureExpeditionPlan(
+            routeID: rawValue,
+            firstEncounter: makeEncounter(first),
+            secondEncounter: makeEncounter(second),
+            bossEncounter: makeEncounter(boss),
+            rewardMultiplierPercent: rewardMultiplierPercent
+        )
+    }
+
+    private func makeEncounter(
+        _ definition: EncounterDefinition
+    ) -> AdventureEncounter {
+        AdventureEncounter(
+            id: "\(encounterIDPrefix)-\(definition.suffix)",
+            affinity: affinity,
+            power: definition.power,
+            maxHealth: definition.health,
+            intentPattern: definition.intents
+        )
     }
 
     static func route(
         for encounterID: String
     ) -> AdventureExpeditionRoute? {
         allCases.first { route in
-            encounterID.hasPrefix(route.encounter.id)
+            encounterID.hasPrefix("\(route.encounterIDPrefix)-")
         }
     }
 }
@@ -126,7 +252,13 @@ final class AdventureExpeditionCenter {
     }
 
     var canStartDraft: Bool {
-        state == nil && draftSelectedCandidates.count == 3
+        state == nil
+            && draftSelectedCandidates.count == 3
+            && isRouteUnlocked(draftRoute)
+    }
+
+    func isRouteUnlocked(_ route: AdventureExpeditionRoute) -> Bool {
+        route.isUnlocked(at: rewardProgress.level)
     }
 
     /// Three equal encounter segments, with enemy HP showing progress inside the active segment.
@@ -299,6 +431,10 @@ final class AdventureExpeditionCenter {
         runID: String = UUID().uuidString
     ) -> Bool {
         guard state == nil else { return false }
+        guard isRouteUnlocked(route) else { return false }
+        guard plan?.routeID == nil || plan?.routeID == route.rawValue else {
+            return false
+        }
         guard
             let party = try? AdventureParty(
                 members: candidates.map(\.profile)

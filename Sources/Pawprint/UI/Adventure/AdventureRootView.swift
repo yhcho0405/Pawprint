@@ -36,8 +36,16 @@ struct AdventureRootView: View {
         expeditionCenter.canStartDraft
     }
 
+    private var isPartyReady: Bool {
+        selectedCandidates.count == 3
+    }
+
     private var selectedRoute: AdventureExpeditionRoute {
         expeditionCenter.draftRoute
+    }
+
+    private var isSelectedRouteUnlocked: Bool {
+        expeditionCenter.isRouteUnlocked(selectedRoute)
     }
 
     private var selectedRouteBinding: Binding<AdventureExpeditionRoute> {
@@ -291,20 +299,46 @@ struct AdventureRootView: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Picker(
-                L10n.t("adventure.expedition.route.label"),
-                selection: selectedRouteBinding
-            ) {
-                ForEach(AdventureExpeditionRoute.allCases) { route in
-                    Label(L10n.t(route.titleKey), systemImage: route.systemImage)
-                        .tag(route)
-                }
-            }
-            .pickerStyle(.menu)
+            AdventureRouteMenu(
+                selection: selectedRouteBinding,
+                adventureLevel: expeditionCenter.rewardProgress.level,
+                showsFieldLabel: true
+            )
 
             Text(L10n.t(selectedRoute.descriptionKey))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
+
+            HStack(spacing: 8) {
+                Text(
+                    AdventureExpeditionPresentation.routeOverview(
+                        selectedRoute
+                    )
+                )
+                .lineLimit(2)
+                Spacer(minLength: 4)
+                Text(
+                    AdventureExpeditionPresentation.routeReward(
+                        selectedRoute
+                    )
+                )
+                .foregroundStyle(
+                    selectedRoute.rewardMultiplierPercent > 100
+                        ? Color.accentColor
+                        : Color.secondary
+                )
+            }
+            .font(.caption2.weight(.semibold))
+
+            if !isSelectedRouteUnlocked {
+                Label(
+                    AdventureExpeditionPresentation
+                        .routeUnlockRequirement(selectedRoute),
+                    systemImage: "lock.fill"
+                )
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.orange)
+            }
 
             VStack(spacing: 7) {
                 setupRule(
@@ -352,8 +386,13 @@ struct AdventureRootView: View {
                 startExpedition()
             } label: {
                 Label(
-                    L10n.t("adventure.expedition.start"),
-                    systemImage: "play.fill"
+                    isSelectedRouteUnlocked
+                        ? L10n.t("adventure.expedition.start")
+                        : AdventureExpeditionPresentation
+                            .routeUnlockRequirement(selectedRoute),
+                    systemImage: isSelectedRouteUnlocked
+                        ? "play.fill"
+                        : "lock.fill"
                 )
                 .font(.headline)
                 .frame(maxWidth: .infinity)
@@ -415,8 +454,8 @@ struct AdventureRootView: View {
                 Text(L10n.t("adventure.party.title"))
                     .font(.headline)
                 Spacer()
-                Image(systemName: canStart ? "checkmark.circle.fill" : "circle.dashed")
-                    .foregroundStyle(canStart ? Color.green : Color.secondary)
+                Image(systemName: isPartyReady ? "checkmark.circle.fill" : "circle.dashed")
+                    .foregroundStyle(isPartyReady ? Color.green : Color.secondary)
             }
 
             Text(L10n.t("adventure.party.hint"))

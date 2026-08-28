@@ -100,9 +100,16 @@ Rund <b>171 Billionen</b> Kombinationen sind erreichbar.</sub>
 > Pawprint-0.10.0-DMG enthalten.
 
 Im entstehenden RPG-Modus wählst du drei Katzen aus vergangenen Tagen und führst sie durch eine
-rundenbasierte Expedition mit drei Kämpfen. Das Fellmuster bestimmt ihre Rolle, die Aura ihre
-Affinität und der Ausdruck ihre Passivfähigkeit. Ihr Seltenheitsrang gibt nur einen kleinen
-Wertebonus. Eine ausgewogene Gruppe wird empfohlen, ist aber nicht vorgeschrieben.
+rundenbasierte Expedition mit drei Kämpfen. Sechs ausgestaltete Routen decken alle sechs
+Affinitäten ab und besitzen eigene Gegner, HP-Werte und wiederholbare Absichtsmuster. Drei Routen
+sind ab Abenteuerlevel 1 verfügbar. Garten im Morgengrauen, Mittagsbahnhof und Labor der tiefen Nacht
+werden auf Level 2, 4 und 6 freigeschaltet. Die höheren Routen geben 15% oder 30% mehr
+Abenteuer-XP, auch auf die Teilbelohnung nach einer Niederlage.
+
+Das Fellmuster bestimmt die Rolle einer Katze, die Aura ihre Affinität und der Ausdruck ihre
+Passivfähigkeit. Ihr Seltenheitsrang gibt nur einen kleinen Wertebonus. Eine ausgewogene Gruppe
+wird empfohlen, ist aber nicht vorgeschrieben. Das Abenteuerlevel schaltet Routen frei, erhöht die
+Kampfwerte jedoch nicht direkt.
 
 Im Hintergrund schreitet nichts von selbst voran. Abenteuer-XP, Routenstempel und die Bindung
 jeder Katze bleiben auf diesem Mac gespeichert; die laufende Expedition mit HP, Mana und Relikten

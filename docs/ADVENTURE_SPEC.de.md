@@ -13,14 +13,9 @@ Maßgeblich sind hier weder Ideen noch spätere Ziele, sondern die Zahlen und Re
 ausgeführten Codes.
 
 > Kurz gesagt: Der Seltenheitsrang einer Katze wirkt sich in kleinem Maß auf HP, Angriff und
-> Verteidigung aus. **Abenteuerlevel, Bindung und Routenstempel erhöhen derzeit dagegen keine
-> Kampfwerte.**
-
-> Hinweis zu Eigennamen in der UI: `de.json` enthält derzeit keine Übersetzungsschlüssel für
-> `adventure.*`. Bei ausgewähltem Deutsch greift Pawprints schlüsselweiser Fallback daher auf das
-> englische Sprachpaket zurück. In den Namensübersichten nennt dieses Dokument die aktuelle
-> englische UI-Bezeichnung zusammen mit einer deutschen Erklärung; danach verwendet es der
-> Lesbarkeit halber die deutschen Begriffe.
+> Verteidigung aus. **Das Abenteuerlevel schaltet auf Level 2, 4 und 6 Routen frei, erhöht aber
+> weiterhin keine Kampfwerte.** Bindung und Routenstempel bleiben gespeicherte Zähler ohne
+> Kampfwirkung.
 
 ## Auf einen Blick
 
@@ -29,12 +24,13 @@ ausgeführten Codes.
 | Gruppe | Genau 3 verschiedene Katzen aus vergangenen Tagen |
 | Expeditionsablauf | Gefecht → Relikt → Gefecht → Relikt → Bosskampf |
 | Aktion | Pro Runde 1 Katze wählen und ihren Standardangriff oder ihre Rollenfähigkeit einsetzen |
-| Routen | 3, alle von Anfang an wählbar |
+| Routen | 6 einzeln ausgestaltete Routen für alle Affinitäten; 3 davon werden durch Level freigeschaltet |
 | Kampfressourcen | Gemeinsame Gruppen-HP und gemeinsames Mana |
 | Dauerhafter Fortschritt | Abenteuer-XP (das Level wird daraus berechnet), Abschlüsse, Routenstempel und Bindung je Katze |
 | Vorübergehende Belohnung | Bis zu 2 Relikte, die nur für die laufende Expedition gelten |
 | Automatischer Fortschritt | Keiner. Nur ein ausdrücklicher Tastendruck führt einen Zug aus |
 | Wertebonus durch Level | Keiner |
+| Freischaltung durch Level | Garten im Morgengrauen auf Level 2, Mittagsbahnhof auf Level 4, Labor der tiefen Nacht auf Level 6 |
 | Wirkung von Bindung und Stempeln | Nur die Zähler werden gespeichert; Kampfeffekte und Verwendung gibt es nicht |
 | Wiederherstellung einer laufenden Expedition | Keine. Nach einem Neustart der App wird sie nicht fortgesetzt |
 
@@ -57,12 +53,12 @@ Abenteuer aus der Katzengalerie öffnen
 | Bezeichnung | Bereich | Grundlage | Aktuelle Wirkung |
 |---|---|---|---|
 | Seltenheitsrang der Katze | S~D | Bestehende Pawpet-Seltenheit | Kleiner Bonus auf HP, Angriff und Verteidigung |
-| Ergebnisrang der Expedition | S~D | Abschlusspunktzahl oder Fehlschlag | Bestimmt die XP-Belohnung dieser Expedition |
-| Abenteuerlevel | Ab 1, ohne Obergrenze | Gesammelte Abenteuer-XP | Zeigt nur den Fortschritt an |
+| Ergebnisrang der Expedition | S~D | Abschlusspunktzahl oder Fehlschlag | Bestimmt die Basis-XP vor dem Routenmultiplikator |
+| Abenteuerlevel | Ab 1, ohne Obergrenze | Gesammelte Abenteuer-XP | Schaltet auf Level 2, 4 und 6 Routen frei; keine Werteskalierung |
 
 Der S-Rang einer Katze und ein S-Rang als Expeditionsergebnis teilen sich nur den Namen. Weder
 Ergebnisrang noch XP, Abenteuerlevel, Bindung oder Routenstempel überschreiben den Seltenheitsrang
-einer Katze oder ändern ihre Kampfwerte.
+einer Katze oder ändern ihre Kampfwerte. Das Abenteuerlevel verändert nur die Routenverfügbarkeit.
 
 ## Katzen für das Abenteuer
 
@@ -116,19 +112,17 @@ Angriff und Verteidigung beeinflussen.
 #### Aktivitätszeit → Aura → Affinität
 
 Die Aura folgt den bestehenden Pawpet-Regeln und wird im Verhältnis 1:1 an die
-Abenteuer-Affinität mit demselben Zeitfenstercode übergeben. Die Pawpet-Aura ist auf Deutsch
-lokalisiert; die Abenteuer-Affinität erscheint derzeit über den englischen Fallback. Als
-maßgebliche Uhrzeit gilt in dieser Reihenfolge
+Abenteuer-Affinität mit demselben Zeitfenstercode übergeben. Als maßgebliche Uhrzeit gilt in dieser Reihenfolge
 `Goldene Stunde → Stunde der geschäftigsten Minute → erste Aktivität → Mittag`.
 
 | Maßgebliche Uhrzeit | Pawpet-Aura | Abenteuer-Affinität |
 |---:|---|---|
-| 00:00~04:59 | Frühe Stunden (`deepNight`) | Deep night (Tiefe Nacht, `deepNight`) |
-| 05:00~07:59 | Morgengrauen (`dawn`) | Dawn (Morgengrauen, `dawn`) |
-| 08:00~11:59 | Morgen (`morning`) | Morning (Morgen, `morning`) |
-| 12:00~16:59 | Nachmittag (`afternoon`) | Afternoon (Nachmittag, `afternoon`) |
-| 17:00~20:59 | Abend (`evening`) | Evening (Abend, `evening`) |
-| 21:00~23:59 | Nacht (`night`) | Night (Nacht, `night`) |
+| 00:00~04:59 | Frühe Stunden (`deepNight`) | Tiefe Nacht (`deepNight`) |
+| 05:00~07:59 | Morgengrauen (`dawn`) | Morgengrauen (`dawn`) |
+| 08:00~11:59 | Morgen (`morning`) | Morgen (`morning`) |
+| 12:00~16:59 | Nachmittag (`afternoon`) | Nachmittag (`afternoon`) |
+| 17:00~20:59 | Abend (`evening`) | Abend (`evening`) |
+| 21:00~23:59 | Nacht (`night`) | Nacht (`night`) |
 
 ### Seltenheit und Katzenrang
 
@@ -397,8 +391,9 @@ nicht mit der hier beschriebenen Heilungskraft zu verwechseln.
 - Die Schadensschwankung des Spielers beträgt bei jeder Aktion `-2...2`.
 - Die Angriffsschwankung des Gegners beträgt bei jeder Aktion `-2...2`.
 - Opportunist wird ausgelöst, wenn aus `0...3` die 0 fällt, also mit genau 25% Wahrscheinlichkeit.
-- Die Startposition der Gegnerabsichten wird vom Seed bestimmt; danach wechseln sie zyklisch
-  zwischen Schwerem Hieb, Abwehrhaltung und Zehrendem Nebel.
+- Jeder Gegner hat ein geordnetes Absichtsmuster. Der Seed wählt dessen Startposition; danach wird
+  das vorgegebene Muster wiederholt. Mehrfache Einträge lassen eine Absicht häufiger erscheinen,
+  ohne eine zusätzliche verborgene Zufallsentscheidung einzuführen.
 - Bei identischem vollständigem Kampfzustand führen dieselbe Katze und dieselbe Aktion zum selben
   Ergebnis. Stimmen Seed, Abschnitt und Runde überein, sind auch beide Schadensschwankungen, die
   Opportunist-Prüfung und die Reihenfolge der Gegnerabsichten gleich.
@@ -408,25 +403,50 @@ nicht mit der hier beschriebenen Heilungskraft zu verwechseln.
 
 ## Routen und Abschnitte
 
-Jede Route besteht fest aus 2 Gefechten und 1 Bosskampf.
+Jede Route besteht fest aus 2 Gefechten und 1 Bosskampf. Für die Gefechte gelten jeweils 3 Züge,
+für den Bosskampf 5. Die produktiven Routen definieren jeden Gegner einzeln; frühere Abschnitte
+werden nicht mehr als Bruchteil der Boss-Kampfkraft erzeugt. Die gegnerische Kampfkraft `P` wird
+auf `1...1000`, ausdrücklich angegebene maximale HP auf `1...2000` begrenzt. Der
+Kompatibilitäts-Initialisierer setzt HP weiterhin standardmäßig auf `2P`, doch die folgenden sechs
+Routen geben die HP ausdrücklich an.
 
-| Abschnitt | Art | Zuglimit | Kampfkraft |
-|---|---|---:|---:|
-| 1 | Gefecht | 3 Züge | `max(1, Boss-Kampfkraft × 3 / 5)` |
-| 2 | Gefecht | 3 Züge | `max(1, Boss-Kampfkraft × 3 / 4)` |
-| 3 | Bosskampf | 5 Züge | Unveränderte Boss-Kampfkraft |
+| Route | Affinität | Mindestlevel | Schwierigkeit | XP-Multiplikator |
+|---|---|---:|---|---:|
+| Sonnenwaldpfad | Morgen | 1 | Einfach | 100% |
+| Signaldächer | Abend | 1 | Normal | 100% |
+| Mitternachtsarchiv | Nacht | 1 | Normal | 100% |
+| Garten im Morgengrauen | Morgengrauen | 2 | Normal | 115% |
+| Mittagsbahnhof | Nachmittag | 4 | Schwer | 130% |
+| Labor der tiefen Nacht | Tiefe Nacht | 6 | Experte | 130% |
 
-Die gegnerische Kampfkraft `P` wird auf `1...1000` begrenzt; die maximalen Gegner-HP sind `2P`.
-Alle drei Gegner einer Route haben dieselbe Affinität.
+Die Schwierigkeit ist eine beschreibende Routenangabe und wendet keine weitere verborgene
+Skalierungsformel an. Eine gesperrte Route ist in der Auswahl als Vorschau sichtbar, kann aber erst
+ab dem erforderlichen Abenteuerlevel gestartet werden. Stempel und Abschlüsse schalten keine
+Routen frei.
 
-| Route | Affinität | Abschnitt 1 `P / HP` | Abschnitt 2 `P / HP` | Boss `P / HP` |
-|---|---|---:|---:|---:|
-| Sunlit Trail (Sonnenwaldpfad) | Morning (Morgen) | 37 / 74 | 46 / 92 | 62 / 124 |
-| Signal Rooftops (Signaldächer) | Evening (Abend) | 39 / 78 | 49 / 98 | 66 / 132 |
-| Midnight Archive (Mitternachtsarchiv) | Night (Nacht) | 42 / 84 | 52 / 104 | 70 / 140 |
+In den folgenden Mustern steht `H` für Schwerer Hieb, `G` für Abwehrhaltung und `D` für Zehrender
+Nebel. Die angegebene Reihenfolge wird wiederholt; der Seed kann ihren ersten Eintrag verschieben.
 
-Alle drei Routen sind von Anfang an freigeschaltet. Level, Stempel oder Abschlüsse sperren nichts
-und verändern den Schwierigkeitsgrad nicht.
+| Route | Abschnitt und Gegner | `P / HP` | Absichtsmuster |
+|---|---|---:|---|
+| Sonnenwaldpfad | 1 · Moosspäher | 34 / 72 | `H-G-D` |
+| Sonnenwaldpfad | 2 · Pollenschelm | 43 / 88 | `G-D-H` |
+| Sonnenwaldpfad | Boss · Sonnenstrahlwächter | 60 / 124 | `H-H-G-D` |
+| Signaldächer | 1 · Kabelspatz | 36 / 72 | `G-G-H` |
+| Signaldächer | 2 · Neonstreuner | 45 / 94 | `G-H-D` |
+| Signaldächer | Boss · Signalwächter | 64 / 132 | `G-G-D-H` |
+| Mitternachtsarchiv | 1 · Staubgeist | 38 / 68 | `D-D-G` |
+| Mitternachtsarchiv | 2 · Tintenschatten | 48 / 84 | `D-H-D` |
+| Mitternachtsarchiv | Boss · Archivwächter | 68 / 120 | `D-D-H` |
+| Garten im Morgengrauen | 1 · Taugeist | 39 / 72 | `H-D-H` |
+| Garten im Morgengrauen | 2 · Glasflügler | 50 / 96 | `H-H-G` |
+| Garten im Morgengrauen | Boss · Morgenblüte | 72 / 142 | `H-D-H` |
+| Mittagsbahnhof | 1 · Bahnsteigfunke | 40 / 82 | `G-G-D` |
+| Mittagsbahnhof | 2 · Uhrwerk-Rivale | 51 / 106 | `G-H-D` |
+| Mittagsbahnhof | Boss · Bahnhofswächter | 74 / 150 | `G-G-H-D` |
+| Labor der tiefen Nacht | 1 · Störsignalgeist | 42 / 84 | `D-H-D-G` |
+| Labor der tiefen Nacht | 2 · Schlafender Prozess | 54 / 110 | `H-D-G-D` |
+| Labor der tiefen Nacht | Boss · Kernel-Wächter | 78 / 158 | `D-H-G-D` |
 
 ### Sieg, Niederlage und Abschnittswechsel
 
@@ -526,17 +546,18 @@ Die Punkteformel liest weder das abschließend verbleibende Mana noch die Anzahl
 Manaverwaltung und ausgewählte Relikte können das Kampfergebnis und damit die Punktzahl dennoch
 indirekt beeinflussen. Das gilt auch für:
 
-- den festen Schwierigkeitsgrad der gewählten Route
+- die eigens definierten Gegner, HP, Absichtsmuster und feste Schwierigkeit der gewählten Route
 - den Seltenheitsrang der Katzen und die Zusammenstellung ihrer Rollen
 
-Fortschrittswerte ganz ohne direkten oder indirekten Einfluss auf Kampf und Punktzahl sind derzeit
-Abenteuerlevel, Bindung und Routenstempel.
+Das Abenteuerlevel bestimmt, welche Route gestartet werden kann, wird nach der Auswahl aber weder
+von Kampf noch Punkteberechnung gelesen. Bindung und Routenstempel haben derzeit weder direkten
+noch indirekten Einfluss auf Kampf oder Punktzahl.
 
 ## XP und dauerhafte Belohnungen
 
 ### Abschluss
 
-| Ergebnisrang | Abenteuer-XP | Stempel der gewählten Route | Bindung der teilnehmenden Katzen |
+| Ergebnisrang | Basis-Abenteuer-XP | Stempel der gewählten Route | Bindung der teilnehmenden Katzen |
 |---|---:|---:|---:|
 | S | 120 | +1 | jeweils +1 |
 | A | 100 | +1 | jeweils +1 |
@@ -547,13 +568,24 @@ Abenteuerlevel, Bindung und Routenstempel.
 Bei einem Abschluss erhöht sich auch die Gesamtzahl der Abschlüsse um 1. Der Belohnungszweig für
 einen Abschluss mit D-Rang ist derzeit nicht erreichbar.
 
+Der Routenmultiplikator gilt für jede positive XP-Vergabe, einschließlich der Teil-XP nach einer
+Niederlage:
+
+```text
+Vergebene Abenteuer-XP = Basis-Abenteuer-XP × Routenmultiplikator / 100
+```
+
+Bei der Ganzzahldivision wird der Rest verworfen. So werden aus 20 Basis-XP auf der Route
+„Garten im Morgengrauen“ 23 und auf einer 130%-Route 26. Stempel und Bindung werden nicht
+multipliziert.
+
 ### Niederlage und Rückzug
 
 ```text
 XP bei Niederlage = vor der Niederlage gewonnene Kämpfe × 10
 ```
 
-| Ergebnis | Abenteuer-XP | Stempel | Bindung |
+| Ergebnis | Basis-Abenteuer-XP | Stempel | Bindung |
 |---|---:|---:|---:|
 | Niederlage im ersten Gefecht | 0 | 0 | 0 |
 | Niederlage nach 1 gewonnenem Gefecht | 10 | 0 | 0 |
@@ -580,17 +612,26 @@ XP pro Level = 250
 | 750~999 | 4 |
 | Danach | Steigt weiterhin alle 250 XP |
 
-Das Level hat derzeit keine Obergrenze. Level und XP-Fortschritt erscheinen in der Oberfläche,
-folgende Wirkungen sind jedoch **noch nicht implementiert**:
+Das Level hat derzeit keine Obergrenze. Level und XP-Fortschritt erscheinen in der Oberfläche und
+schalten folgende Routen frei:
+
+| Abenteuerlevel | Neu verfügbare Route |
+|---:|---|
+| 1 | Sonnenwaldpfad, Signaldächer und Mitternachtsarchiv |
+| 2 | Garten im Morgengrauen |
+| 4 | Mittagsbahnhof |
+| 6 | Labor der tiefen Nacht |
+
+Folgende Wirkungen sind **nicht implementiert**:
 
 - Erhöhung von Angriff, maximalen HP, Verteidigung, Schadensminderung oder Heilung
 - Erhöhung des maximalen Manas
-- Skalierung von Kampfkraft oder HP des Gegners
-- Multiplikatoren für XP oder Belohnungen
-- Freischaltung von Routen, Relikten, Fähigkeiten oder Funktionen
+- Skalierung von Werten, gegnerischer Kampfkraft oder Gegner-HP durch das Abenteuerlevel
+- Freischaltung von Relikten, Fähigkeiten oder anderen Funktionen
 
-Das Abenteuerlevel zeigt derzeit also nur den Fortschritt und hat keinen Einfluss auf die
-Kampfstärke.
+Das Abenteuerlevel ist somit Fortschritt und Zugangsvoraussetzung für Routen. Es verändert weder
+Gruppenwerte, Mana, Gegnerwerte noch die Punkteformel direkt. Höhere XP-Multiplikatoren gehören zu
+den ausgestalteten Routen und sind keine allgemeine Skalierung durch das Level.
 
 ## Routenstempel und Katzenbindung
 
@@ -653,10 +694,9 @@ werden sie einmalig migriert.
 | Wertewachstum nach Level | Nicht vorhanden |
 | Bindungswirkung und -anzeige | Nur der gespeicherte Zähler ist vorhanden |
 | Stempelbelohnungen, -verbrauch oder -freischaltungen | Nicht vorhanden |
-| Routenfreischaltung nach Level | Alle Routen sind von Anfang an geöffnet |
 | Zahlenbonus für eine Gruppe aus allen 3 Rollen | Nicht vorhanden |
 | Steigende Gegnerschwierigkeit nach Level | Nicht vorhanden |
-| Dauerhaftes Reliktinventar | Nicht vorhanden |
+| Dauerhaftes Relikt-, Ausrüstungs- oder Gegenstandsinventar samt Aufwertung | Nicht vorhanden |
 | Speichern und Wiederherstellen einer laufenden Expedition | Nicht vorhanden |
 | Leerlauf-, Offline- oder Hintergrundfortschritt | Nicht vorhanden |
 
@@ -671,15 +711,16 @@ Oberfläche verwendet werden.
 ## Maßgebliche Codebereiche
 
 - [AdventureEngine.swift](../Sources/PawprintCore/Engine/AdventureEngine.swift): Katzenwerte,
-  Aktionen, Schaden, Verteidigung, Heilung, Passivfähigkeiten und Gegnerabsichten
+  Aktionen, Schaden, Verteidigung, Heilung, Passivfähigkeiten sowie gegnerspezifische HP und
+  Absichtsmuster
 - [AdventureExpeditionEngine.swift](../Sources/PawprintCore/Adventure/AdventureExpeditionEngine.swift):
-  Expedition mit 3 Kämpfen, Mana, Relikte, Punkte, Ränge und Belohnungen
+  Expedition mit 3 Kämpfen, Mana, Relikte, Punkte, Ränge und XP-Belohnungen mit Routenmultiplikator
 - [PawpetAdventureAdapter.swift](../Sources/Pawprint/Adventure/PawpetAdventureAdapter.swift):
   Verbindung zwischen Pawpet-Aussehen und RPG-Eigenschaften
 - [AdventureRosterCatalog.swift](../Sources/Pawprint/Adventure/AdventureRosterCatalog.swift):
   Regeln für teilnehmende Kandidaten
 - [AdventureExpeditionCenter.swift](../Sources/Pawprint/Adventure/AdventureExpeditionCenter.swift):
-  Routen, Gruppenentwurf und Lebenszyklus der aktiven Expedition
+  sechs ausgestaltete Routen, Levelgrenzen, Gruppenentwurf und Lebenszyklus der aktiven Expedition
 - [AdventureRewardStore.swift](../Sources/Pawprint/Adventure/AdventureRewardStore.swift):
   Speicherung von XP, Level, Stempeln und Bindung
 - [PawprintStore.swift](../Sources/PawprintCore/Storage/PawprintStore.swift):

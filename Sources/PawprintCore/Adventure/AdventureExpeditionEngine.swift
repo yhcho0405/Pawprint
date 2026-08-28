@@ -28,14 +28,21 @@ package struct AdventureExpeditionStage: Equatable, Sendable {
 package struct AdventureExpeditionPlan: Equatable, Sendable {
     package let routeID: String
     package let stages: [AdventureExpeditionStage]
+    /// Percentage applied to every positive XP grant from this route.
+    package let rewardMultiplierPercent: Int
 
     package init(
         routeID: String,
         firstEncounter: AdventureEncounter,
         secondEncounter: AdventureEncounter,
-        bossEncounter: AdventureEncounter
+        bossEncounter: AdventureEncounter,
+        rewardMultiplierPercent: Int = 100
     ) {
         self.routeID = routeID
+        self.rewardMultiplierPercent = min(
+            max(0, rewardMultiplierPercent),
+            1_000
+        )
         stages = [
             AdventureExpeditionStage(
                 kind: .skirmish,
@@ -61,7 +68,8 @@ package struct AdventureExpeditionPlan: Equatable, Sendable {
     /// power levels, so callers can migrate without inventing three new route definitions at once.
     package init(
         routeID: String,
-        bossEncounter: AdventureEncounter
+        bossEncounter: AdventureEncounter,
+        rewardMultiplierPercent: Int = 100
     ) {
         self.init(
             routeID: routeID,
@@ -75,7 +83,8 @@ package struct AdventureExpeditionPlan: Equatable, Sendable {
                 affinity: bossEncounter.affinity,
                 power: max(1, bossEncounter.power * 3 / 4)
             ),
-            bossEncounter: bossEncounter
+            bossEncounter: bossEncounter,
+            rewardMultiplierPercent: rewardMultiplierPercent
         )
     }
 }
@@ -518,7 +527,7 @@ package enum AdventureExpeditionEngine {
         )
         let reward = permanentReward(
             runID: accumulator.runID,
-            routeID: accumulator.plan.routeID,
+            plan: accumulator.plan,
             party: accumulator.party,
             status: status,
             rank: rank,
@@ -676,34 +685,35 @@ package enum AdventureExpeditionEngine {
 
     private static func permanentReward(
         runID: String,
-        routeID: String,
+        plan: AdventureExpeditionPlan,
         party: AdventureParty,
         status: AdventureExpeditionResultStatus,
         rank: AdventureExpeditionRank,
         completedBattles: [AdventureExpeditionBattleSummary]
     ) -> AdventurePermanentReward {
-        let adventureXP: Int
+        let baseAdventureXP: Int
         switch status {
         case .completed:
             switch rank {
-            case .s: adventureXP = 120
-            case .a: adventureXP = 100
-            case .b: adventureXP = 80
-            case .c: adventureXP = 60
-            case .d: adventureXP = 40
+            case .s: baseAdventureXP = 120
+            case .a: baseAdventureXP = 100
+            case .b: baseAdventureXP = 80
+            case .c: baseAdventureXP = 60
+            case .d: baseAdventureXP = 40
             }
         case .defeated:
-            adventureXP = completedBattles.filter {
+            baseAdventureXP = completedBattles.filter {
                 $0.outcome == .victory
             }.count * 10
         case .withdrew:
-            adventureXP = 0
+            baseAdventureXP = 0
         }
+        let adventureXP = baseAdventureXP * plan.rewardMultiplierPercent / 100
 
         let completed = status == .completed
         return AdventurePermanentReward(
             grantID: "\(runID):adventure-expedition",
-            routeID: routeID,
+            routeID: plan.routeID,
             adventureXP: adventureXP,
             routeStampDelta: completed ? 1 : 0,
             bondGains: completed

@@ -98,9 +98,14 @@ Around <b>171 trillion</b> combinations are reachable.</sub>
 > Development branch preview: this RPG mode is not included in the public Pawprint 0.10.0 DMG.
 
 The RPG mode under development lets you pick three cats from previous days and take them through
-a three-battle, turn-based expedition. A cat's coat pattern sets its role, its aura sets its
-affinity, its expression becomes a passive, and its rarity grade adds only a small stat edge. A
-balanced party is recommended, never required.
+a three-battle, turn-based expedition. Six authored routes now cover all six affinities, with
+different enemies, health values and repeatable intent patterns. Three routes are available at
+adventure level 1; Dawn Garden, Noon Station and Deep-Night Lab unlock at levels 2, 4 and 6.
+The level-gated routes award 15% or 30% more adventure XP, including partial XP after defeat.
+
+A cat's coat pattern sets its role, its aura sets its affinity, its expression becomes a passive,
+and its rarity grade adds only a small stat edge. A balanced party is recommended, never required.
+Adventure level unlocks routes but does not directly raise combat stats.
 
 Nothing advances in the background. Adventure XP, route stamps and each cat's bond stay on this
 Mac, while the active run, health, mana and relics live only in memory. Adventure rewards never

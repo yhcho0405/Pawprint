@@ -458,11 +458,195 @@ final class AdventureExpeditionCenterTests: XCTestCase {
         XCTAssertEqual(center.state, afterChoice)
     }
 
-    func testDefaultRoutePowersFormTheValidatedDifficultyCurve() {
+    func testAuthoredRoutesCoverEveryAffinityAndDifficultyTier() {
         XCTAssertEqual(
             AdventureExpeditionRoute.allCases.map(\.encounter.power),
-            [62, 66, 70]
+            [60, 64, 68, 72, 74, 78]
         )
+        XCTAssertEqual(
+            AdventureExpeditionRoute.allCases.map(\.minimumLevel),
+            [1, 1, 1, 2, 4, 6]
+        )
+        XCTAssertEqual(
+            AdventureExpeditionRoute.allCases.map(\.rewardMultiplierPercent),
+            [100, 100, 100, 115, 130, 130]
+        )
+        XCTAssertEqual(
+            AdventureExpeditionRoute.allCases.map(\.difficulty),
+            [.easy, .normal, .normal, .normal, .hard, .expert]
+        )
+        XCTAssertEqual(
+            Set(AdventureExpeditionRoute.allCases.map { $0.affinity.rawValue }),
+            Set(AdventureAffinity.allCases.map(\.rawValue))
+        )
+
+        let stages = AdventureExpeditionRoute.allCases.flatMap {
+            $0.expeditionPlan.stages
+        }
+        XCTAssertEqual(stages.count, 18)
+        XCTAssertEqual(Set(stages.map { $0.encounter.id }).count, 18)
+        XCTAssertTrue(
+            stages.allSatisfy { !$0.encounter.intentPattern.isEmpty }
+        )
+        XCTAssertEqual(
+            AdventureExpeditionRoute.allCases.map {
+                $0.expeditionPlan.stages.map(\.maxTurns)
+            },
+            Array(repeating: [3, 3, 5], count: 6)
+        )
+        XCTAssertEqual(
+            stages.map { stage in
+                let encounter = stage.encounter
+                let pattern = encounter.intentPattern
+                    .map(\.rawValue)
+                    .joined(separator: ",")
+                return "\(encounter.power)/\(encounter.maxHealth)/\(pattern)"
+            },
+            [
+                "34/72/heavyStrike,guardedStance,drainingMist",
+                "43/88/guardedStance,drainingMist,heavyStrike",
+                "60/124/heavyStrike,heavyStrike,guardedStance,drainingMist",
+                "36/72/guardedStance,guardedStance,heavyStrike",
+                "45/94/guardedStance,heavyStrike,drainingMist",
+                "64/132/guardedStance,guardedStance,drainingMist,heavyStrike",
+                "38/68/drainingMist,drainingMist,guardedStance",
+                "48/84/drainingMist,heavyStrike,drainingMist",
+                "68/120/drainingMist,drainingMist,heavyStrike",
+                "39/72/heavyStrike,drainingMist,heavyStrike",
+                "50/96/heavyStrike,heavyStrike,guardedStance",
+                "72/142/heavyStrike,drainingMist,heavyStrike",
+                "40/82/guardedStance,guardedStance,drainingMist",
+                "51/106/guardedStance,heavyStrike,drainingMist",
+                "74/150/guardedStance,guardedStance,heavyStrike,drainingMist",
+                "42/84/drainingMist,heavyStrike,drainingMist,guardedStance",
+                "54/110/heavyStrike,drainingMist,guardedStance,drainingMist",
+                "78/158/drainingMist,heavyStrike,guardedStance,drainingMist",
+            ]
+        )
+        for route in AdventureExpeditionRoute.allCases {
+            XCTAssertTrue(
+                route.expeditionPlan.stages.allSatisfy {
+                    AdventureExpeditionRoute.route(
+                        for: $0.encounter.id
+                    ) == route
+                }
+            )
+            XCTAssertTrue(route.isUnlocked(at: route.minimumLevel))
+            if route.minimumLevel > 1 {
+                XCTAssertFalse(
+                    route.isUnlocked(at: route.minimumLevel - 1)
+                )
+            }
+        }
+    }
+
+    func testLockedRouteCanBePreviewedButCannotStart() {
+        let context = rewardContext()
+        defer { context.cleanup() }
+        let center = AdventureExpeditionCenter(rewardStore: context.store)
+        center.replaceDraftCandidates(partyCandidates())
+        center.setDraftRoute(.dawnGarden)
+
+        XCTAssertEqual(center.draftRoute, .dawnGarden)
+        XCTAssertFalse(center.isRouteUnlocked(.dawnGarden))
+        XCTAssertFalse(center.canStartDraft)
+        XCTAssertFalse(
+            center.startDraft(
+                seed: 1,
+                plan: easyPlan(routeID: "dawnGarden"),
+                runID: "locked-route"
+            )
+        )
+        XCTAssertNil(center.state)
+    }
+
+    func testLevelUnlockAndRoutePlanIdentityAreEnforced() {
+        let context = rewardContext()
+        defer { context.cleanup() }
+        context.store.apply(
+            AdventurePermanentReward(
+                grantID: "level-seed",
+                routeID: "sunlitTrail",
+                adventureXP: 250,
+                routeStampDelta: 0,
+                bondGains: []
+            )
+        )
+        let center = AdventureExpeditionCenter(rewardStore: context.store)
+        center.replaceDraftCandidates(partyCandidates())
+        center.setDraftRoute(.dawnGarden)
+
+        XCTAssertTrue(center.isRouteUnlocked(.dawnGarden))
+        XCTAssertTrue(center.canStartDraft)
+        XCTAssertFalse(
+            center.startDraft(
+                seed: 1,
+                plan: easyPlan(routeID: "sunlitTrail"),
+                runID: "mismatched-route"
+            )
+        )
+        XCTAssertTrue(
+            center.startDraft(
+                seed: 1,
+                plan: easyPlan(routeID: "dawnGarden"),
+                runID: "unlocked-route"
+            )
+        )
+    }
+
+    func testAuthoredRouteDifficultyBandsRemainPlayable() throws {
+        for route in AdventureExpeditionRoute.allCases {
+            for grade in [AdventureGrade.s, .b, .d] {
+                let team = try AdventureParty(
+                    members: [
+                        AdventureCat(
+                            id: "guardian",
+                            role: .guardian,
+                            affinity: route.affinity,
+                            passive: .steady,
+                            grade: grade
+                        ),
+                        AdventureCat(
+                            id: "striker",
+                            role: .striker,
+                            affinity: route.affinity,
+                            passive: .opportunist,
+                            grade: grade
+                        ),
+                        AdventureCat(
+                            id: "support",
+                            role: .support,
+                            affinity: route.affinity,
+                            passive: .focused,
+                            grade: grade
+                        ),
+                    ]
+                )
+                let victories = (UInt64(0)..<32).filter { seed in
+                    playAuthoredRoute(route, party: team, seed: seed)
+                        == .completed
+                }.count
+
+                XCTAssertGreaterThan(
+                    victories,
+                    0,
+                    "\(route.rawValue) is unwinnable for a balanced matching-affinity \(grade.rawValue)-grade party"
+                )
+                if grade == .s {
+                    let expectedBand: ClosedRange<Int>
+                    switch route.difficulty {
+                    case .easy: expectedBand = 24...32
+                    case .normal: expectedBand = 16...31
+                    case .hard: expectedBand = 6...20
+                    case .expert: expectedBand = 1...9
+                    }
+                    XCTAssertTrue(
+                        expectedBand.contains(victories),
+                        "\(route.rawValue) won \(victories)/32 seeds outside its \(route.difficulty.rawValue) band \(expectedBand)"
+                    )
+                }
+            }
+        }
     }
 
     func testCompletedRewardPersistsAndCannotBeGrantedTwice() throws {
@@ -741,6 +925,61 @@ final class AdventureExpeditionCenterTests: XCTestCase {
                 $0.role == state.battle.currentIntent.counterRole
             }?.id
         )
+    }
+
+    private func playAuthoredRoute(
+        _ route: AdventureExpeditionRoute,
+        party: AdventureParty,
+        seed: UInt64
+    ) -> AdventureExpeditionResultStatus? {
+        var state = AdventureExpeditionEngine.begin(
+            party: party,
+            plan: route.expeditionPlan,
+            seed: seed,
+            runID: "balance-\(route.rawValue)-\(seed)"
+        )
+        let relicPriority: [AdventureExpeditionRelic] = [
+            .sharpenedClaw,
+            .manaBell,
+            .paddedCape,
+            .echoCharm,
+            .healingHerb,
+            .warmTea,
+        ]
+
+        while state.result == nil {
+            let command: AdventureExpeditionCommand
+            switch state.phase {
+            case .awaitingTurn:
+                guard let actor = state.party.members.first(
+                    where: {
+                        $0.role == state.battle.currentIntent.counterRole
+                    }
+                ) else {
+                    return nil
+                }
+                command = state.mana > 0
+                    ? .perform(.roleSkill(catID: actor.id))
+                    : .perform(.basicAttack(catID: actor.id))
+            case let .choosingRelic(offer):
+                guard let relic = relicPriority.first(
+                    where: { offer.options.contains($0) }
+                ) else {
+                    return nil
+                }
+                command = .chooseRelic(relic)
+            case .finished:
+                return state.result?.status
+            }
+
+            let transition = AdventureExpeditionEngine.reduce(
+                command,
+                in: state
+            )
+            guard transition.disposition == .accepted else { return nil }
+            state = transition.state
+        }
+        return state.result?.status
     }
 
     private func easyPlan(
